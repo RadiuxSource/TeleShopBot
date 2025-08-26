@@ -1,0 +1,14 @@
+aiohttp
+asyncio==3.4.3
+python-dotenv==1.0.0
+gpytranslate==2.0.0
+translators==5.9.4
+psutil
+pyrofork
+pyrostep
+python-dotenv
+motor
+apscheduler
+tgcrypto
+selenium
+
