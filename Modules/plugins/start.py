@@ -1,176 +1,294 @@
+#!/usr/bin/env python3
+"""
+TeleShopBot Start Plugin
+Handles the main start command and core navigation
+"""
+
 from pyrogram import filters, Client
-from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 
 from config import Settings
-from Questions import get_solution_video, get_explaination_govt, get_explaination_tenth
-from utils.translator import translate_async
-from database import add_served_user, add_served_chat
-from Modules import zenova, BOT_NAME, BOT_USERNAME, NO_SOLN, MSG_GROUP
+from database import add_served_user
+from Modules import teleshop_bot, BOT_NAME, BOT_USERNAME
 
+# ============================================
+# START MESSAGE AND WELCOME SCREEN
+# ============================================
 
-# start_msg = f"""
-# ʜᴇʏ 🙋‍♂️, ɪ ᴀᴍ **{BOT_NAME}🤖**!
+start_message = f"""
+👋 **Welcome to the Telegram Buy & Sell Bot!**
 
-# ɪ ᴀᴍ ᴄᴀᴘᴀʙʟᴇ ᴏꜰ ꜱᴇɴᴅɪɴɢ Qᴜᴀʟɪᴛʏ Qᴜᴇꜱᴛɪᴏɴꜱ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘꜱ ᴀᴄᴄᴏʀᴅɪɴɢ ᴛᴏ ʏᴏᴜʀ ꜱᴛʀᴇᴀᴍ, Qᴜᴇꜱᴛɪᴏɴ ʟᴇᴠᴇʟꜱ ᴀɴᴅ ᴍᴜᴄʜ ᴍᴏʀᴇ 😎.
+With this bot, you can easily buy or sell **Telegram Groups**, **Channels**, **Bots**, and more digital assets.
 
-# ᴊᴜꜱᴛ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴀɴᴅ ᴇɴᴊᴏʏ ᴀ ɴᴇᴡ Qᴜɪᴢ ᴘᴏʟʟ ᴀꜰᴛᴇʀ ᴇᴠᴇʀʏ 30 ᴍɪɴꜱ 🎉.
+🛍️ **What can you do here?**
+• 🛒 **Buy** premium Telegram assets
+• 💰 **Sell** your own digital assets
+• 👤 **Manage** your profile and transactions
+• ✨ **Upgrade** to Premium for exclusive benefits
+• ⚙️ **Customize** your experience
 
-# ʏᴏᴜ ᴄᴀɴ ᴄʜᴀɴɢᴇ ʏᴏᴜʀ ɢʀᴏᴜᴘ's ꜱᴇᴛᴛɪɴɢꜱ ᴏꜰ Qᴜɪᴢ ᴠɪᴀ /setting ᴄᴏᴍᴍᴀɴᴅ.
-# """
-
-start_msg = f"""
-ʜᴇʏ 🙋‍♂️, ɪ ᴀᴍ **{BOT_NAME}🤖**!
-
-**{BOT_NAME}** ɪꜱ ᴀ ғᴇᴀᴛᴜʀᴇ-ʀɪᴄʜ Qᴜɪᴢ ʙᴏᴛ ꜰᴏʀ Tᴇʟᴇɢʀᴀᴍ, ᴅᴇꜱɪɢɴᴇᴅ ᴀꜱ ᴀ ᴍᴏᴅᴇʀɴ ᴀʟᴛᴇʀɴᴀᴛɪᴠᴇ ᴛᴏ @quizbot.  
-Cʀᴇᴀᴛᴇ, ᴘʟᴀʏ, ᴀɴᴅ ᴇɴᴊᴏʏ ɪɴᴛᴇʀᴀᴄᴛɪᴠᴇ Qᴜɪᴢᴢᴇꜱ ᴡɪᴛʜ ᴍᴜʟᴛɪᴘʟᴇ Qᴜᴇꜱᴛɪᴏɴ ᴛʏᴘᴇꜱ, ᴇxᴀᴍ ᴄᴀᴛᴇɢᴏʀɪᴇꜱ, ᴀɴᴅ ᴇɴɢᴀɢɪɴɢ ꜰᴇᴀᴛᴜʀᴇꜱ!
-
-📚 **Mᴀɪɴ Fᴇᴀᴛᴜʀᴇꜱ:**
-• Aᴜᴛᴏ-ǫᴜɪᴢ Pᴏʟʟꜱ ᴇᴠᴇʀʏ 30 ᴍɪɴꜱ ɪɴ Gʀᴏᴜᴘꜱ  
-• Cʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ Qᴜɪᴢᴢᴇꜱ (ᴡɪᴛʜ ᴅᴀᴛᴀʙᴀꜱᴇ ᴀꜱ ᴡᴇʟʟ ᴀꜱ ᴍᴀɴᴜᴀʟ ǫᴜᴇꜱᴛɪᴏɴꜱ)  
-• Cᴜꜱᴛᴏᴍɪᴢᴀʙʟᴇ Qᴜᴇꜱᴛɪᴏɴ ʟᴇᴠᴇʟꜱ, ꜱᴛʀᴇᴀᴍꜱ & ᴇxᴀᴍ ᴛʏᴘᴇꜱ  
-• Dᴇᴛᴀɪʟᴇᴅ ꜱᴏʟᴜᴛɪᴏɴꜱ & ᴇxᴘʟᴀɴᴀᴛɪᴏɴꜱ ꜰᴏʀ Qᴜᴇꜱᴛɪᴏɴꜱ  
-
-👥 **Uꜱᴇʀ Fᴇᴀᴛᴜʀᴇꜱ:**
-• Pᴇʀꜰᴏʀᴍᴀɴᴄᴇ Tʀᴀᴄᴋɪɴɢ & Pᴇʀꜱᴏɴᴀʟ Pʀᴏꜰɪʟᴇ  
-• Gʟᴏʙᴀʟ Lᴇᴀᴅᴇʀʙᴏᴀʀᴅꜱ  
-• Qᴜɪᴢ Sʜᴀʀɪɴɢ & Mᴀɴᴀɢᴇᴍᴇɴᴛ
-
-⚙️ **Gʀᴏᴜᴘ Fᴇᴀᴛᴜʀᴇꜱ:**
-• Cᴜꜱᴛᴏᴍ Qᴜɪᴢ Sᴇᴛᴛɪɴɢꜱ  
-• Gʀᴏᴜᴘ Qᴜɪᴢ Sᴛᴀᴛɪᴄꜱ  
-• Mᴜʟᴛɪ-ʟᴀɴɢᴜᴀɢᴇ ꜱᴜᴘᴘᴏʀᴛ
-
-👉 ᴜꜱᴇ /help ᴛᴏ ᴇxᴘʟᴏʀᴇ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅꜱ, ᴏʀ ᴠɪꜱɪᴛ [quizora.live](https://quizora.live) ꜰᴏʀ ꜰᴜʟʟ ᴅᴏᴄꜱ!
+**Please choose an option below:**
 """
 
-
-help_text = """
-ʜᴇʏ! ʜᴇʀᴇ ᴀʀᴇ sᴏᴍᴇ ᴏꜰ ᴍʏ ᴄᴏᴍᴍᴀɴᴅꜱ:
-
-📌 ʙᴀsɪᴄ ᴄᴏᴍᴍᴀɴᴅs:
-  ➤ /start - sᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ
-  ➤ /help - sʜᴏᴡ ᴛʜɪs ʜᴇʟᴘ ᴍᴇssᴀɢᴇ
-  ➤ /feedback - sᴇɴᴅ ғᴇᴇᴅʙᴀᴄᴋ ᴛᴏ ʙᴏᴛ ᴀᴅᴍɪɴs
-
-👤 ᴘʀᴏғɪʟᴇ & sᴛᴀᴛs:
-  ➤ /profile - ᴠɪᴇᴡ & ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ᴘʀᴏғɪʟᴇ
-  ➤ /mstat - ᴠɪᴇᴡ ʏᴏᴜʀ ǫᴜɪᴢ ᴘᴇʀғᴏʀᴍᴀɴᴄᴇ
-  ➤ /gstat - ᴠɪᴇᴡ ɢʀᴏᴜᴘ ǫᴜɪᴢ sᴛᴀᴛs
-  ➤ /top - sᴇᴇ ᴛᴏᴘ ɢʟᴏʙᴀʟ sᴄᴏʀᴇʀs
-
-📝 ǫᴜɪᴢ ᴄʀᴇᴀᴛɪᴏɴ:
-  ➤ /create_quiz - ᴄʀᴇᴀᴛᴇ ᴀ ɴᴇᴡ ǫᴜɪᴢ
-  ➤ /cancel - ᴄᴀɴᴄᴇʟ ᴏɴɢᴏɪɴɢ ǫᴜɪᴢ ᴄʀᴇᴀᴛɪᴏɴ
-  ➤ /my_quiz - ʟɪsᴛ ʏᴏᴜʀ ᴄʀᴇᴀᴛᴇᴅ ǫᴜɪᴢᴢᴇs
-  ➤ /view_[quiz_id] - ᴠɪᴇᴡ sᴘᴇᴄɪғɪᴄ ǫᴜɪᴢ
-  ➤ /group_quiz [quiz_id] - sᴛᴀʀᴛ ǫᴜɪᴢ ɪɴ ɢʀᴏᴜᴘ
-
-⚙️ ɢʀᴏᴜᴘ ᴀᴅᴍɪɴ ᴄᴏᴍᴍᴀɴᴅs:
-  ➤ /setting ᴏʀ /setup - ᴄᴏɴғɪɢᴜʀᴇ ǫᴜɪᴢ sᴇᴛᴛɪɴɢs ɪɴ ɢʀᴏᴜᴘ
-  ➤ /stop - sᴛᴏᴘ ᴏɴɢᴏɪɴɢ ǫᴜɪᴢ
-
-ℹ️ Fᴏʀ ᴍᴏʀᴇ ᴅᴇᴛᴀɪʟꜱ, ᴠɪꜱɪᴛ [quizora.live](https://quizora.live) ꜰᴏʀ ᴛʜᴇ ꜰᴜʟʟ ᴅᴏᴄᴜᴍᴇɴᴛᴀᴛɪᴏɴ 📚!
-"""
-keyboard = InlineKeyboardMarkup(
+# Main menu keyboard
+main_menu_keyboard = InlineKeyboardMarkup([
     [
-        [InlineKeyboardButton("➕ ᴀᴅᴅ ᴍᴇ ᴛᴏ ɢʀᴏᴜᴘ", url=f"http://t.me/{BOT_USERNAME}?startgroup=s&admin=delete_messages+pin_messages+invite_users")],
-        [InlineKeyboardButton("📣 ᴄʜᴀɴɴᴇʟ", url=Settings.Channel),
-         InlineKeyboardButton("🔔 ᴜᴘᴅᴀᴛᴇꜱ", url=Settings.Update)],
+        InlineKeyboardButton("🛒 BUY", callback_data="main_buy"),
+        InlineKeyboardButton("💰 SELL", callback_data="main_sell")
+    ],
+    [
+        InlineKeyboardButton("👤 MY PROFILE", callback_data="main_profile"),
+        InlineKeyboardButton("⚙️ SETTINGS", callback_data="main_settings")
+    ],
+    [
+        InlineKeyboardButton("✨ PREMIUM", callback_data="main_premium")
+    ],
+    [
+        InlineKeyboardButton("🆘 Support", url=Settings.SUPPORT_CHAT),
+        InlineKeyboardButton("📢 Updates", url=Settings.UPDATES_CHANNEL)
     ]
-)
+])
 
-@zenova.on_callback_query(filters.regex("hindi"))
-async def hindi_callback(client: Client, callback_query):
-    message = callback_query.message
-    await message.edit("हिंदी में अनुवाद किया जा रहा है...")
-    text = message.text
-    translated_text = await translate_async(text, "hi")
-    await message.edit(translated_text) 
-    
-async def send_solution(client: Client, _id: str, user_id: int):
-    if _id.startswith('quiz_'):
-        return
-    if _id.startswith('govt_'):
-        soln = await get_explaination_govt(_id.replace('govt_', ''))
-        if not soln: soln = "😔 Sorry, no Explaination found for this question."
-        k = InlineKeyboardMarkup([[InlineKeyboardButton("हिंदी में देखे", callback_data="hindi")]])
-        return await client.send_message(user_id, soln, reply_markup=k)
-    if _id.startswith('htent'):
-        soln = await get_explaination_tenth(_id)
-        if not soln: soln = "😔 Sorry, no Explaination found for this question."
-        return await client.send_message(user_id, soln)
-    vdo_url = await get_solution_video(_id, NO_SOLN) 
-    if vdo_url: message = f"😊 Here is the video solution for the question: {vdo_url}"
-    else: message = "😔 Sorry, no video solution found for this question." 
-    await client.send_message(user_id, message, disable_web_page_preview=True)
+# Help text
+help_text = """
+🆘 **TeleShopBot Help & Commands**
 
-@zenova.on_message(filters.command(["start"]) & filters.private, group=-5)
-async def start(client: Client, message: Message):
-    await add_served_user(message.from_user.id, client)
-    if len(message.text.split()) > 1:
-        u = message.text.split()[1]
-        return await send_solution(
-            client, u, 
-            message.from_user.id
+**📋 Basic Commands:**
+• `/start` - Start the bot and show main menu
+• `/help` - Show this help message
+• `/profile` - View your profile
+• `/buy` - Quick access to buy assets
+• `/sell` - Quick access to sell assets
+• `/settings` - Bot settings and preferences
+• `/premium` - Premium features
+• `/cancel` - Cancel current operation
+
+**🛒 Buying Process:**
+1. Choose asset type (Group/Channel/Bot/Other)
+2. Select creation year and month
+3. Browse available assets
+4. Complete purchase with escrow protection
+
+**💰 Selling Process:**
+1. Choose what to sell
+2. Set creation details and price
+3. Choose direct sale or marketplace
+4. Optional escrow service for safety
+
+**✨ Premium Benefits:**
+• Priority in buying and selling
+• Free escrow support
+• Featured listings
+• No extra commissions
+• High-rate group notifications
+
+**🔒 Safety Features:**
+• Escrow service for secure transactions
+• Verified sellers and buyers
+• Transaction history tracking
+• 24/7 support team
+
+**💡 Need more help?**
+Contact our support team: {Settings.SUPPORT_CHAT}
+"""
+
+# ============================================
+# COMMAND HANDLERS
+# ============================================
+
+@teleshop_bot.on_message(filters.command(["start"]) & filters.private)
+async def start_command(client: Client, message: Message):
+    """
+    Handle /start command - Main entry point
+    """
+    try:
+        # Add user to database
+        await add_served_user(message.from_user.id)
+        
+        # Get user info
+        user_name = message.from_user.first_name
+        user_id = message.from_user.id
+        
+        # Log user start
+        print(f"👤 User started bot: {user_name} (ID: {user_id})")
+        
+        # Send welcome message
+        await message.reply_text(
+            start_message,
+            reply_markup=main_menu_keyboard,
+            disable_web_page_preview=True
         )
-    # get = await client.get_users(message.from_user.id)
-    # name = get.first_name + (get.last_name if get.last_name else '')
-    await message.reply(start_msg.format(BOT_NAME), reply_markup= keyboard)
+        
+    except Exception as e:
+        print(f"❌ Error in start command: {e}")
+        await message.reply_text(
+            "❌ **Error occurred!** Please try again or contact support.",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("🆘 Support", url=Settings.SUPPORT_CHAT)
+            ]])
+        )
 
-@zenova.on_message(filters.command(["help"]) & filters.private, group=-5)
+@teleshop_bot.on_message(filters.command(["help"]) & filters.private)
 async def help_command(client: Client, message: Message):
-#     help_text = """
-# ʜᴇʏ! ʜᴇʀᴇ ᴀʀᴇ sᴏᴍᴇ ᴏꜰ ᴍʏ ᴄᴏᴍᴍᴀɴᴅꜱ:
+    """
+    Handle /help command
+    """
+    try:
+        back_keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="back_to_main")]
+        ])
+        
+        await message.reply_text(
+            help_text,
+            reply_markup=back_keyboard,
+            disable_web_page_preview=True
+        )
+        
+    except Exception as e:
+        print(f"❌ Error in help command: {e}")
+        await message.reply_text("❌ Error occurred! Please try again.")
 
-#   ➤ /start - sᴛᴀʀᴛ ᴛʜᴇ ʙᴏᴛ.
-#   ➤ /mstat - Vɪᴇᴡ ʏᴏᴜʀ Qᴜɪᴢ ᴘᴇʀғᴏʀᴍᴀɴᴄᴇ.
-#   ➤ /gstat - Vɪᴇᴡ Qᴜɪᴢ sᴛᴀᴛs ꜰᴏʀ ᴛʜᴇ ɢʀᴏᴜᴘ.
-#   ➤ /top - Sᴇᴇ ᴛʜᴇ ᴛᴏᴘ ɢʟᴏʙᴀʟ sᴄᴏʀᴇʀs.
-#   ➤ /setting - Aᴄᴄᴇss Qᴜɪᴢ sᴇᴛᴛɪɴɢs ᴀɴᴅ ᴄᴏɴꜰɪɡᴜʀᴀᴛɪᴏns.
-#   ➤ /help - Sʜᴏᴡ ᴛʜɪs ʜᴇʟᴘ ᴍᴇssᴀɢᴇ.
+@teleshop_bot.on_message(filters.command(["buy"]) & filters.private)
+async def quick_buy_command(client: Client, message: Message):
+    """
+    Quick access to buy menu
+    """
+    try:
+        from Modules.plugins.buy import show_buy_menu
+        await show_buy_menu(client, message, edit=False)
+    except Exception as e:
+        print(f"❌ Error in buy command: {e}")
+        await message.reply_text("❌ Error occurred! Please try again.")
 
-# ɪғ ʏᴏᴜ ʜᴀᴠᴇ ᴀɴʏ ᴏᴛʜᴇʀ ᴛʜɪɴɢs ʏᴏᴜ ᴡᴏᴜʟᴅ ʟɪᴋᴇ ᴛᴏ ᴋɴᴏᴡ, ᴠɪsɪᴛ sᴜᴘᴘᴏʀᴛ ᴄʜᴀɴɴᴇʟ!
-#     """
-    await message.reply(help_text, reply_markup= keyboard)
+@teleshop_bot.on_message(filters.command(["sell"]) & filters.private)
+async def quick_sell_command(client: Client, message: Message):
+    """
+    Quick access to sell menu
+    """
+    try:
+        from Modules.plugins.sell import show_sell_menu
+        await show_sell_menu(client, message, edit=False)
+    except Exception as e:
+        print(f"❌ Error in sell command: {e}")
+        await message.reply_text("❌ Error occurred! Please try again.")
 
-@zenova.on_message(filters.command(["start", "help"]) & filters.group & ~filters.chat(MSG_GROUP))
-async def start_group(client: Client, message: Message):
-    await add_served_chat(message.chat.id, client)
-    keyboard = InlineKeyboardMarkup(
-        [[InlineKeyboardButton("𝖮𝖯𝖤𝖭 𝖨𝖭 𝖣𝖬 💌", url=f"https://t.me/{BOT_USERNAME}")]]
-    )
-    await message.reply(
-        f"ʜᴇʏ! ᴜꜱᴇ /setting ᴛᴏ ᴄᴏɴꜰɪɢᴜʀᴇ Qᴜɪᴢ ꜱᴇᴛᴛɪɴɢꜱ ꜰᴏʀ ᴛʜɪꜱ ɢʀᴏᴜᴘ. ꜰᴏʀ ᴍᴏʀᴇ ꜰᴇᴀᴛᴜʀᴇꜱ, ᴄʜᴇᴄᴋ ᴍᴇ ᴏᴜᴛ ɪɴ ᴅᴍ!",
-        reply_markup=keyboard
-    )
+@teleshop_bot.on_message(filters.command(["profile"]) & filters.private)
+async def quick_profile_command(client: Client, message: Message):
+    """
+    Quick access to profile
+    """
+    try:
+        from Modules.plugins.profile import show_user_profile
+        await show_user_profile(client, message, edit=False)
+    except Exception as e:
+        print(f"❌ Error in profile command: {e}")
+        await message.reply_text("❌ Error occurred! Please try again.")
 
-@zenova.on_message(filters.command(['setting', 'settings', 'setup']) & filters.private)
-async def settings_private(client: Client, message: Message):
-    settings_msg = (
-        "ʜᴇʏ! ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ ᴄᴀɴ ᴏɴʟʏ ʙᴇ ᴜsᴇᴅ ɪɴ ɢʀᴏᴜᴘs ᴡʜᴇʀᴇ ɪ ᴀᴍ ᴘʀᴇsᴇɴᴛ. "
-        "ᴘʟᴇᴀsᴇ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴛᴏ ᴜsᴇ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ."
-        # "ɪғ ɴᴏ ɢʀᴏᴜᴘs ʏᴏᴜ ʜᴀᴠᴇ ᴛʜᴇɴ ᴄʟɪᴄᴋ ᴏɴ 'ᴊᴏɪɴ ᴏғғɪᴄɪᴀʟ Qᴜɪᴢ ᴄʜᴀᴛs' ʙᴜᴛᴛᴏɴ."
-    )
-    keyboard = InlineKeyboardMarkup(
-        [
-            [InlineKeyboardButton("➕ ᴀᴅᴅ ᴍᴇ ᴛᴏ ɢʀᴏᴜᴘ", url=f"http://t.me/{BOT_USERNAME}?startgroup=s&admin=delete_messages+pin_messages+invite_users")],
-            # [InlineKeyboardButton("ᴊᴏɪɴ ᴏғғɪᴄɪᴀʟ Qᴜɪᴢ ᴄʜᴀᴛs", callback_data= 'join_quiz_chat')]
-        ]
-    )
-    await message.reply(settings_msg, reply_markup=keyboard)
+# ============================================
+# CALLBACK QUERY HANDLERS
+# ============================================
 
-@zenova.on_callback_query(filters.regex("join_quiz_chat"))
-async def join_quiz_chat(client: Client, callback_query):
-    # Define the links to the official promoters chat groups
-    chat_links = [
-        "https://t.me/OfficialQuizGroup1",  # Replace with actual group link
-        "https://t.me/OfficialQuizGroup2",  # Replace with actual group link
-    ]
-    inline_keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Join Group 1", url=chat_links[0])],
-        [InlineKeyboardButton("Join Group 2", url=chat_links[1])]
-    ])
-    message = (
-        "Nᴏ ɢʀᴏᴜᴘꜱ? Nᴏ ᴡᴏʀʀʏ!! Jᴏɪɴ ᴏᴜʀ ᴏғғɪᴄɪᴀʟ Pʀᴏᴍᴏᴛᴇʀꜱ ɢʀᴏᴜᴘꜱ ᴛᴏ ɢᴇᴛ Qᴜɪᴢᴢᴇꜱ 24/7! ᴀɴᴅ ʜᴀᴠᴇ ꜰᴜɴ!"
-    )
-    await callback_query.message.edit(message, reply_markup=inline_keyboard, disable_web_page_preview=False)
+@teleshop_bot.on_callback_query(filters.regex("^main_"))
+async def main_menu_callbacks(client: Client, callback_query: CallbackQuery):
+    """
+    Handle main menu button clicks
+    """
+    try:
+        data = callback_query.data
+        message = callback_query.message
+        user_id = callback_query.from_user.id
+        
+        # Answer callback to remove loading state
+        await callback_query.answer()
+        
+        if data == "main_buy":
+            from Modules.plugins.buy import show_buy_menu
+            await show_buy_menu(client, message, edit=True)
+            
+        elif data == "main_sell":
+            from Modules.plugins.sell import show_sell_menu
+            await show_sell_menu(client, message, edit=True)
+            
+        elif data == "main_profile":
+            from Modules.plugins.profile import show_user_profile
+            await show_user_profile(client, message, edit=True)
+            
+        elif data == "main_settings":
+            from Modules.plugins.settings import show_settings_menu
+            await show_settings_menu(client, message, edit=True)
+            
+        elif data == "main_premium":
+            from Modules.plugins.premium import show_premium_info
+            await show_premium_info(client, message, edit=True)
+            
+    except Exception as e:
+        print(f"❌ Error in main menu callback: {e}")
+        await callback_query.answer("❌ Error occurred! Please try again.", show_alert=True)
+
+@teleshop_bot.on_callback_query(filters.regex("back_to_main"))
+async def back_to_main_menu(client: Client, callback_query: CallbackQuery):
+    """
+    Handle back to main menu
+    """
+    try:
+        await callback_query.answer()
+        await callback_query.message.edit_text(
+            start_message,
+            reply_markup=main_menu_keyboard,
+            disable_web_page_preview=True
+        )
+    except Exception as e:
+        print(f"❌ Error going back to main menu: {e}")
+        await callback_query.answer("❌ Error occurred!", show_alert=True)
+
+# ============================================
+# GROUP COMMAND HANDLERS
+# ============================================
+
+@teleshop_bot.on_message(filters.command(["start", "help"]) & filters.group)
+async def group_start_command(client: Client, message: Message):
+    """
+    Handle start/help in groups
+    """
+    try:
+        group_keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                "💬 Open in Private Chat", 
+                url=f"https://t.me/{BOT_USERNAME}?start=group_{message.chat.id}"
+            )]
+        ])
+        
+        await message.reply_text(
+            f"👋 **Hello!** I'm {BOT_NAME}\n\n"
+            "🛍️ I help users buy and sell **Telegram Groups**, **Channels**, **Bots** and other digital assets.\n\n"
+            "📱 For full functionality, please use me in **private chat**.",
+            reply_markup=group_keyboard,
+            disable_web_page_preview=True
+        )
+        
+    except Exception as e:
+        print(f"❌ Error in group start command: {e}")
+
+# ============================================
+# UTILITY FUNCTIONS
+# ============================================
+
+def get_main_keyboard():
+    """
+    Get the main menu keyboard
+    """
+    return main_menu_keyboard
+
+def get_start_message():
+    """
+    Get the start message text
+    """
+    return start_message
+
+# Export functions for other modules
+__all__ = [
+    "get_main_keyboard",
+    "get_start_message",
+    "main_menu_keyboard",
+    "start_message"
+]

@@ -1,94 +1,114 @@
+#!/usr/bin/env python3
+"""
+TeleShopBot Modules Package
+Initializes the bot and loads all plugins and handlers
+"""
+
 import asyncio
-import time
-import sys
 import logging
-import logging.handlers as handlers
-from motor import motor_asyncio
 from pyrogram import Client
-from pyrostep import shortcuts
-import apscheduler.schedulers.asyncio as aps
+from pyrogram.types import BotCommand
 from config import Settings
-from pyrogram.errors import AuthKeyDuplicated as AKDD, AuthBytesInvalid as ABID, AuthKeyInvalid as AVID, SessionRevoked as SREV
 
-loop = asyncio.get_event_loop()
-boot = time.time()
-
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    datefmt="%d/%m/%Y %H:%M:%S",
-    format='[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(stream=sys.stdout),
-              handlers.RotatingFileHandler("logs.txt", mode="a", maxBytes=104857600, backupCount=2, encoding="utf-8")],)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
-logging.getLogger("aiohttp.access").setLevel(logging.WARNING)
-logging.getLogger("apscheduler").setLevel(logging.WARNING)
-logging.getLogger("pyrogram").setLevel(logging.ERROR)
-logging.getLogger("httpx").setLevel(logging.WARNING)
+# Bot information
+BOT_NAME = Settings.BOT_NAME
+BOT_USERNAME = Settings.BOT_USERNAME
 
-
-client = motor_asyncio.AsyncIOMotorClient(Settings.MONGO_URI)
-db = client["::quizbot::"]
-ChatDB = db["Chats_DB"]
-UserDB = db["User_DB"]
-UserStatDB = db["V3_User_Stat_DB"]
-BotDB = db["BOT_DB"]
-QuizDB = db["Quiz_DB"]
-
-
-zenova = Client(
-    ":cbot:",
+# Initialize the Pyrogram client
+teleshop_bot = Client(
+    name="TeleShopBot",
     api_id=Settings.API_ID,
     api_hash=Settings.API_HASH,
     bot_token=Settings.BOT_TOKEN,
-    mongodb=dict(connection=client, remove_peers=False)
+    plugins=dict(root="Modules/plugins"),
+    workdir=".",
+    sleep_threshold=60
 )
 
-
-# Create a async scheduler
-scheduler = aps.AsyncIOScheduler()
-
-support = [[['Official Group', Settings.STUDY_ROOM, "url"]]]
-support_ikm= shortcuts.inlinekeyboard(support)
-SUDO_USERS = Settings.SUDO_USERS
-LOG_GROUP = Settings.LOG_GROUP
-MSG_GROUP = Settings.MSG_GROUP
-QUIZ_BASE = Settings.QUIZ_BASE
-CORRECT_ANS = Settings.CORRECT_ANS
-WRONG_ANS = Settings.WRONG_ANS
-NO_SOLN = "b60y82lrh02lJKLSohwfv8pfd"
-
-
-async def auth_handler():
-    db = client[":cbot:"]
-    collection = db['session']
-    # delete the session file in case of any error
-    if collection is not None:
-        await collection.delete_many({})
-    print("Session data deleted successfully.")
-
-
-async def cbot_bot():
-    global BOT_ID, BOT_NAME, BOT_USERNAME
-    try:
-        await zenova.start()
-    except (AKDD, ABID, AVID, SREV):
-        print("Auth key is invalid, expired or duplicated. Deleting the session data and retrying.")
-        await auth_handler()
-        await zenova.start()
-    try:
-        await zenova.send_message(int(LOG_GROUP), text= "Bot started successfully!")
-    except Exception as e:
-        print("Please add to your log group, and give me administrator powers!")
-        print(f"Error: {e}")
+async def setup_bot_commands():
+    """
+    Set up bot commands that will appear in Telegram's command menu
+    """
+    commands = [
+        BotCommand("start", "🚀 Start the bot"),
+        BotCommand("help", "❓ Get help and instructions"),
+        BotCommand("profile", "👤 View your profile"),
+        BotCommand("buy", "🛒 Buy digital assets"),
+        BotCommand("sell", "💰 Sell your assets"),
+        BotCommand("settings", "⚙️ Bot settings"),
+        BotCommand("premium", "✨ Premium features"),
+        BotCommand("support", "🆘 Get support"),
+        BotCommand("cancel", "❌ Cancel current operation")
+    ]
     
-    getme = await zenova.get_me()
-    BOT_ID = getme.id
-    BOT_USERNAME = getme.username
-    if getme.last_name:
-        BOT_NAME = getme.first_name + " " + getme.last_name
-    else:
-        BOT_NAME = getme.first_name
-    print(BOT_ID, BOT_NAME, BOT_USERNAME)
+    try:
+        await teleshop_bot.set_bot_commands(commands)
+        logger.info("✅ Bot commands set successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to set bot commands: {e}")
 
+async def initialize_bot():
+    """
+    Initialize bot with necessary setup
+    """
+    try:
+        # Initialize database if available
+        try:
+            from database import init_database
+            database_success = await init_database()
+            if database_success:
+                logger.info("✅ Database connected successfully!")
+            else:
+                logger.warning("⚠️ Database connection failed. Using sample data.")
+        except ImportError:
+            logger.warning("⚠️ Database module not found. Bot will run with sample data.")
+        
+        # Get bot information
+        me = await teleshop_bot.get_me()
+        logger.info(f"🤖 Bot started: @{me.username}")
+        logger.info(f"📋 Bot ID: {me.id}")
+        logger.info(f"👤 Bot Name: {me.first_name}")
+        
+        # Set up bot commands
+        await setup_bot_commands()
+        
+        logger.info("✅ TeleShopBot initialization completed successfully!")
+        
+        # Send startup notification to log group if configured
+        if Settings.LOG_GROUP:
+            try:
+                await teleshop_bot.send_message(
+                    Settings.LOG_GROUP,
+                    f"🚀 **TeleShopBot Started Successfully!**\n\n"
+                    f"🤖 **Bot:** @{me.username}\n"
+                    f"📅 **Started:** Successfully\n"
+                    f"🔧 **Version:** 1.0.0\n"
+                    f"💾 **Database:** {'Connected' if Settings.MONGO_URI else 'Local'}"
+                )
+            except Exception as e:
+                logger.warning(f"⚠️ Could not send startup message to log group: {e}")
+                
+    except Exception as e:
+        logger.error(f"❌ Bot initialization failed: {e}")
+        raise
 
-loop.run_until_complete(cbot_bot())
+# Initialize when module is imported
+logger.info("🔧 Initializing TeleShopBot modules...")
+logger.info(f"📋 Bot Name: {BOT_NAME}")
+logger.info(f"📋 Bot Username: @{BOT_USERNAME}")
+
+# Export important objects
+__all__ = [
+    "teleshop_bot",
+    "BOT_NAME", 
+    "BOT_USERNAME",
+    "initialize_bot",
+    "setup_bot_commands"
+]

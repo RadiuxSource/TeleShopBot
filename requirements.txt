@@ -1,14 +1,58 @@
-aiohttp
-asyncio==3.4.3
-python-dotenv==1.0.0
-gpytranslate==2.0.0
-translators==5.9.4
-psutil
-pyrofork
-pyrostep
-python-dotenv
-motor
-apscheduler
-tgcrypto
-selenium
+# ========== CORE TELEGRAM BOT FRAMEWORK ==========
+pyrofork>=2.3.0
+pyrogram>=2.0.0
+tgcrypto>=1.2.5
+
+# ========== DATABASE & DATA STORAGE ==========
+motor>=3.3.0                # MongoDB async driver
+pymongo>=4.6.0             # MongoDB sync driver
+python-dotenv>=1.0.0       # Environment variables
+
+# ========== WEB & HTTP ==========
+aiohttp>=3.9.0             # Async HTTP client/server
+requests>=2.31.0           # HTTP library
+aiofiles>=23.2.1           # Async file operations
+
+# ========== DATE & TIME ==========
+python-dateutil>=2.8.2    # Date parsing utilities
+pytz>=2023.3              # Timezone support
+
+# ========== UTILITIES ==========
+psutil>=5.9.6             # System utilities
+apscheduler>=3.10.4       # Task scheduler
+pydantic>=2.5.0           # Data validation
+
+# ========== LANGUAGE & TRANSLATION ==========
+googletrans>=4.0.0        # Translation support
+langdetect>=1.0.9         # Language detection
+
+# ========== DATA PROCESSING ==========
+pandas>=2.1.0             # Data analysis (for stats)
+numpy>=1.25.0             # Numerical computing
+
+# ========== LOGGING & MONITORING ==========
+coloredlogs>=15.0.1       # Colored logging
+structlog>=23.2.0         # Structured logging
+
+# ========== SECURITY & ENCRYPTION ==========
+cryptography>=41.0.0      # Cryptographic recipes
+bcrypt>=4.1.2             # Password hashing
+
+# ========== IMAGE & MEDIA PROCESSING ==========
+Pillow>=10.1.0            # Image processing
+qrcode>=7.4.2             # QR code generation
+
+# ========== DEVELOPMENT & TESTING ==========
+pytest>=7.4.0            # Testing framework
+black>=23.12.0            # Code formatter
+flake8>=6.1.0             # Code linter
+
+# ========== DEPLOYMENT ==========
+gunicorn>=21.2.0          # WSGI HTTP Server
+uvicorn>=0.24.0           # ASGI server
+fastapi>=0.104.0          # Modern web framework (for webhooks)
+
+# ========== PAYMENT PROCESSING (OPTIONAL) ==========
+# stripe>=7.8.0           # Stripe payment processing
+# razorpay>=1.4.0         # Razorpay (Indian payment gateway)
 

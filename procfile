@@ -1,1 +1,14 @@
-web: python -m Modules
+# ============================================
+# TeleShopBot Procfile Configuration
+# For deployment on Heroku, Railway, Koyeb, etc.
+# ============================================
+
+# Main bot process
+worker: python main.py
+
+# Web process (if using webhooks)
+web: python main.py --webhook
+
+# Optional processes for scaling:
+# scheduler: python -m Modules.scheduler
+# worker: python -m Modules.worker
