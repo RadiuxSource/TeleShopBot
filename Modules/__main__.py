@@ -1,7 +1,7 @@
 import asyncio
 import importlib
 from pyrogram import idle
-from Modules.plugins import ALL_MODULES
+from Modules.modules import ALL_MODULES
 
 
 loop = asyncio.get_event_loop()

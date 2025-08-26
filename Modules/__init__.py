@@ -9,6 +9,7 @@ import logging
 from pyrogram import Client
 from pyrogram.types import BotCommand
 from config import Settings
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Configure logging
 logging.basicConfig(
@@ -20,6 +21,8 @@ logger = logging.getLogger(__name__)
 # Bot information
 BOT_NAME = Settings.BOT_NAME
 BOT_USERNAME = Settings.BOT_USERNAME
+SUDO_USERS=Settings.ADMIN_IDS
+
 
 # Initialize the Pyrogram client
 teleshop_bot = Client(
@@ -27,49 +30,20 @@ teleshop_bot = Client(
     api_id=Settings.API_ID,
     api_hash=Settings.API_HASH,
     bot_token=Settings.BOT_TOKEN,
-    plugins=dict(root="Modules/plugins"),
-    workdir=".",
-    sleep_threshold=60
 )
 
-async def setup_bot_commands():
-    """
-    Set up bot commands that will appear in Telegram's command menu
-    """
-    commands = [
-        BotCommand("start", "🚀 Start the bot"),
-        BotCommand("help", "❓ Get help and instructions"),
-        BotCommand("profile", "👤 View your profile"),
-        BotCommand("buy", "🛒 Buy digital assets"),
-        BotCommand("sell", "💰 Sell your assets"),
-        BotCommand("settings", "⚙️ Bot settings"),
-        BotCommand("premium", "✨ Premium features"),
-        BotCommand("support", "🆘 Get support"),
-        BotCommand("cancel", "❌ Cancel current operation")
-    ]
-    
-    try:
-        await teleshop_bot.set_bot_commands(commands)
-        logger.info("✅ Bot commands set successfully")
-    except Exception as e:
-        logger.error(f"❌ Failed to set bot commands: {e}")
+
+client = AsyncIOMotorClient(Settings.MONGO_URI)
+db = client["::BUYSELL::"]
+ChatDB = db["Chats_DB"]
+UserDB = db["User_DB"]
+
 
 async def initialize_bot():
     """
     Initialize bot with necessary setup
     """
     try:
-        # Initialize database if available
-        try:
-            from database import init_database
-            database_success = await init_database()
-            if database_success:
-                logger.info("✅ Database connected successfully!")
-            else:
-                logger.warning("⚠️ Database connection failed. Using sample data.")
-        except ImportError:
-            logger.warning("⚠️ Database module not found. Bot will run with sample data.")
-        
         # Get bot information
         me = await teleshop_bot.get_me()
         logger.info(f"🤖 Bot started: @{me.username}")
@@ -77,7 +51,6 @@ async def initialize_bot():
         logger.info(f"👤 Bot Name: {me.first_name}")
         
         # Set up bot commands
-        await setup_bot_commands()
         
         logger.info("✅ TeleShopBot initialization completed successfully!")
         
