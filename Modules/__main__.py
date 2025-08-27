@@ -2,13 +2,14 @@ import asyncio
 import importlib
 from pyrogram import idle
 from Modules.modules import ALL_MODULES
-
+from . import initialize_bot
 
 loop = asyncio.get_event_loop()
 
 async def cbot_boot():
+    await initialize_bot()
     for all_module in ALL_MODULES:
-        importlib.import_module("Modules.plugins." + all_module)
+        importlib.import_module("Modules.modules." + all_module)
     print(str(ALL_MODULES))
     print("𝖻𝗈𝗍 𝗌𝗎𝖼𝖼𝖾𝗌𝗌𝖿𝗎lly 𝗌𝗍𝖺𝗋𝗍")
     await idle()

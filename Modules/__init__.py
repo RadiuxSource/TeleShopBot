@@ -37,6 +37,7 @@ client = AsyncIOMotorClient(Settings.MONGO_URI)
 db = client["::BUYSELL::"]
 ChatDB = db["Chats_DB"]
 UserDB = db["User_DB"]
+StoreDB = db["Store_DB"]
 
 
 async def initialize_bot():
@@ -44,6 +45,7 @@ async def initialize_bot():
     Initialize bot with necessary setup
     """
     try:
+        await teleshop_bot.start()
         # Get bot information
         me = await teleshop_bot.get_me()
         logger.info(f"🤖 Bot started: @{me.username}")

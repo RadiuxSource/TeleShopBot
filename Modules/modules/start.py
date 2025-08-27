@@ -7,6 +7,8 @@ Handles /start, /help, and main menu navigation for group marketplace
 from pyrogram import filters, Client
 from pyrogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from Modules import teleshop_bot
+from Modules.modules.buy import buy_command
+from Modules.modules.sell import sell_command
 from database import add_served_user
 
 BOT_NAME = "GroupMarketBot"
@@ -77,19 +79,6 @@ async def help_command(client: Client, message: Message):
     except Exception as e:
         await message.reply_text("❌ Error occurred! Please try again.")
 
-@teleshop_bot.on_message(filters.command(["buy"]) & filters.private)
-async def buy_command(client: Client, message: Message):
-    await message.reply_text(
-        "🛒 Buy Groups - Coming soon!",
-        reply_markup=main_menu_keyboard
-    )
-
-@teleshop_bot.on_message(filters.command(["sell"]) & filters.private)
-async def sell_command(client: Client, message: Message):
-    await message.reply_text(
-        "💰 Sell Groups - Coming soon!",
-        reply_markup=main_menu_keyboard
-    )
 
 @teleshop_bot.on_message(filters.command(["escrow"]) & filters.private)
 async def escrow_command(client: Client, message: Message):
