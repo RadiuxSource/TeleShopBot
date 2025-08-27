@@ -10,6 +10,7 @@ from Modules import teleshop_bot
 from Modules.modules.buy import buy_command
 from Modules.modules.sell import sell_command
 from database import add_served_user
+import re
 
 BOT_NAME = "GroupMarketBot"
 BOT_USERNAME = "GroupMarketBot"
@@ -104,21 +105,23 @@ async def settings_command(client: Client, message: Message):
 # ============================================
 # REPLY KEYBOARD HANDLERS
 # ============================================
-@teleshop_bot.on_message(filters.text & filters.private)
+@teleshop_bot.on_message(filters.regex(r"^(🛒\s*buy\s*groups|💰\s*sell\s*groups|🛡️\s*escrow\s*service|👤\s*my\s*profile|⚙️\s*settings|🆘\s*help|🔙\s*back\s*to\s*main\s*menu)$", re.IGNORECASE) & filters.private)
 async def keyboard_handler(client: Client, message: Message):
     text = message.text.strip().lower()
-    if text in ["🛒 buy groups", "buy groups"]:
+    if "buy groups" in text:
         await buy_command(client, message)
-    elif text in ["💰 sell groups", "sell groups"]:
+    elif "sell groups" in text:
         await sell_command(client, message)
-    elif text in ["🛡️ escrow service", "escrow service"]:
+    elif "escrow service" in text:
         await escrow_command(client, message)
-    elif text in ["👤 my profile", "my profile"]:
+    elif "my profile" in text:
         await profile_command(client, message)
-    elif text in ["⚙️ settings", "settings"]:
+    elif "settings" in text:
         await settings_command(client, message)
-    elif text in ["🆘 help", "help"]:
+    elif "help" in text:
         await help_command(client, message)
+    elif "back to main menu" in text:
+        await start_command(client, message)
     else:
         await message.reply_text(
             "❓ Unknown option. Please use the menu below.",
