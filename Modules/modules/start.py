@@ -9,6 +9,8 @@ from pyrogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
 from Modules import teleshop_bot
 from Modules.modules.buy import buy_command
 from Modules.modules.sell import sell_command
+from Modules.modules.profile import profile_command
+from Modules.modules.settings import settings_command
 from database import add_served_user
 import re
 
@@ -88,43 +90,54 @@ async def escrow_command(client: Client, message: Message):
         reply_markup=main_menu_keyboard
     )
 
-@teleshop_bot.on_message(filters.command(["profile"]) & filters.private)
-async def profile_command(client: Client, message: Message):
-    await message.reply_text(
-        "👤 My Profile - Coming soon!",
-        reply_markup=main_menu_keyboard
-    )
 
-@teleshop_bot.on_message(filters.command(["settings"]) & filters.private)
-async def settings_command(client: Client, message: Message):
-    await message.reply_text(
-        "⚙️ Settings - Coming soon!",
-        reply_markup=main_menu_keyboard
-    )
 
 # ============================================
 # REPLY KEYBOARD HANDLERS
 # ============================================
-@teleshop_bot.on_message(filters.regex(r"^(🛒\s*buy\s*groups|💰\s*sell\s*groups|🛡️\s*escrow\s*service|👤\s*my\s*profile|⚙️\s*settings|🆘\s*help|🔙\s*back\s*to\s*main\s*menu)$", re.IGNORECASE) & filters.private)
+@teleshop_bot.on_message(filters.text & filters.private & ~filters.command(["start", "help", "buy", "sell", "profile", "settings", "escrow"]))
 async def keyboard_handler(client: Client, message: Message):
-    text = message.text.strip().lower()
-    if "buy groups" in text:
-        await buy_command(client, message)
-    elif "sell groups" in text:
-        await sell_command(client, message)
-    elif "escrow service" in text:
-        await escrow_command(client, message)
-    elif "my profile" in text:
-        await profile_command(client, message)
-    elif "settings" in text:
-        await settings_command(client, message)
-    elif "help" in text:
-        await help_command(client, message)
-    elif "back to main menu" in text:
-        await start_command(client, message)
-    else:
+    try:
+        text = message.text.strip().lower()
+        print(f"Keyboard handler received: '{text}'")  # Debug log
+        
+        # Handle keyboard buttons
+        if "buy groups" in text or "🛒" in text:
+            print("Processing buy groups")
+            await buy_command(client, message)
+            return
+        elif "sell groups" in text or "💰" in text:
+            print("Processing sell groups")
+            await sell_command(client, message)
+            return
+        elif "escrow service" in text or "🛡️" in text:
+            print("Processing escrow service")
+            await escrow_command(client, message)
+            return
+        elif "my profile" in text or "👤" in text:
+            print("Processing my profile")
+            await profile_command(client, message)
+            return
+        elif "settings" in text or "⚙️" in text:
+            print("Processing settings")
+            await settings_command(client, message)
+            return
+        elif "help" in text or "🆘" in text:
+            print("Processing help")
+            await help_command(client, message)
+            return
+        elif "back to main menu" in text or "🔙" in text:
+            print("Processing back to main menu")
+            await start_command(client, message)
+            return
+        
+        # If not a recognized keyboard button, don't respond
+        # This allows other handlers (like anonymous chat) to process the message
+        
+    except Exception as e:
+        print(f"Error in keyboard_handler: {e}")
         await message.reply_text(
-            "❓ Unknown option. Please use the menu below.",
+            "❌ Error processing your request. Please try again.",
             reply_markup=main_menu_keyboard
         )
 
